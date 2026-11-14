@@ -1,0 +1,36 @@
+<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Audio de cierre</title><meta name=robots content="noindex,nofollow">
+<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0e0e0e;color:#eee;font-family:-apple-system,BlinkMacSystemFont,Inter,Arial,sans-serif;padding:24px}
+.c{width:100%;max-width:420px;text-align:center}.br{font-size:11px;letter-spacing:2px;color:#c9a45c}h1{font-size:22px;margin:6px 0 4px;color:#e3c88f}p{color:#aaa;font-size:14px;line-height:1.45;margin:0 0 26px}
+#b{width:150px;height:150px;border-radius:50%;border:2px solid #c9a45c;background:linear-gradient(135deg,#e3c88f,#c9a45c 55%,#a8823f);color:#1a1a1a;font-size:17px;font-weight:700;cursor:pointer}
+#b.rec{background:#c0392b;border-color:#e57368;color:#fff;animation:pu 1.4s ease-in-out infinite}@keyframes pu{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.6)}50%{box-shadow:0 0 0 18px rgba(192,57,43,0)}}
+#b:disabled{opacity:.5}#t{font-size:30px;font-weight:700;margin:22px 0 6px;font-variant-numeric:tabular-nums;color:#fff}#st{font-size:15px;color:#bbb;min-height:44px;line-height:1.4}#st.ok{color:#8fd3a8;font-weight:600}#st.ko{color:#ff8a7a}
+#re{display:none;margin:14px auto 0;border:1px solid #c9a45c;background:transparent;color:#e3c88f;padding:11px 16px;border-radius:10px;font-size:15px;font-weight:600}</style></head>
+<body><div class=c><div class=br>CASA SEAT CUPRA</div><h1>🎙️ Audio de cierre</h1><p>Cuenta cómo ha ido el turno. Pulsa para empezar y otra vez para terminar (máx. 5 min).</p>
+<button id=b>Grabar</button><div id=t>0:00</div><div id=st></div><button id=re>Reintentar envío</button><div id=hint style="margin-top:18px;font-size:12px;color:#777">Cuando termine, vuelve a la pestaña de la app.</div></div>
+<script>
+var CFG=(function(){var o={u:"https://script.google.com/macros/s/AKfycbyC9cOw3sSrlcew2fJ1SueoOYxYaFlovzVl9oaE0LgQA5DEIuPEpq6JnqRebnE5njg2/exec",t:"",h:""};try{location.hash.replace(/^#/,"").split("&").forEach(function(p){var i=p.indexOf("=");if(i>0){var k=p.slice(0,i),v=decodeURIComponent(p.slice(i+1));if(k==="t")o.t=v;if(k==="h")o.h=v}})}catch(e){}return o})();
+var R=null,CH=[],S=null,T0=0,TM=null,MAX=300,BL=null;
+function $(i){return document.getElementById(i)}
+function fmt(s){return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
+function st(t,c){var e=$("st");e.textContent=t;e.className=c||""}
+function enviar(){if(!BL)return;$("re").style.display="none";$("b").disabled=true;st("Enviando audio…");var rd=new FileReader();
+rd.onload=function(){fetch(CFG.u,{method:"POST",body:JSON.stringify({accion:"audioCierre",token:CFG.t,host:CFG.h,data:String(rd.result)})}).then(function(r){return r.json()}).then(function(x){
+if(x&&x.ok){st("✓ Audio guardado. Vuelve a la app y pulsa ENVIAR CHECKLIST.","ok");$("b").textContent="Grabar de nuevo";$("b").disabled=false;setTimeout(function(){try{window.close()}catch(e){}},2500)}
+else{st("No se pudo guardar: "+(x&&x.error||"error"),"ko");$("re").style.display="block";$("b").disabled=false}}).catch(function(e){st("Sin conexión o error al enviar. Revisa la conexión y reintenta.","ko");$("re").style.display="block";$("b").disabled=false})};
+rd.onerror=function(){st("No se pudo leer el audio.","ko");$("b").disabled=false};rd.readAsDataURL(BL)}
+$("re").onclick=enviar;
+if(!CFG.t){st("Abre esta grabadora desde la app (botón «Grabar audio» en Cierre).","ko");$("b").disabled=true}
+$("b").onclick=function(){if(R&&R.state==="recording"){R.stop();return}
+if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||typeof MediaRecorder==="undefined"){st("Este navegador no permite grabar. Actualiza el iPhone o usa «Subir nota de voz» en la app.","ko");return}
+$("b").disabled=true;$("re").style.display="none";st("Pidiendo permiso del micrófono…");
+navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){S=s;CH=[];var mt="";["audio/mp4","audio/webm;codecs=opus","audio/webm"].some(function(x){try{if(MediaRecorder.isTypeSupported(x)){mt=x;return true}}catch(e){}return false});
+var r=mt?new MediaRecorder(s,{mimeType:mt}):new MediaRecorder(s);R=r;
+r.ondataavailable=function(e){if(e.data&&e.data.size)CH.push(e.data)};
+r.onstop=function(){clearInterval(TM);try{S.getTracks().forEach(function(t){t.stop()})}catch(e){}$("b").className="";$("b").textContent="Grabar";
+var tp=String(r.mimeType||mt||"audio/mp4").split(";")[0]||"audio/mp4";var bl=new Blob(CH,{type:tp});if(!bl.size){st("No se ha grabado nada. Prueba otra vez.","ko");$("b").disabled=false;return}
+if(bl.size>15*1024*1024){st("El audio es demasiado grande. Graba uno más corto.","ko");$("b").disabled=false;return}
+BL=bl;enviar()};
+r.start(1000);T0=Date.now();$("t").textContent="0:00";$("b").disabled=false;$("b").className="rec";$("b").textContent="Parar";st("Grabando…");
+TM=setInterval(function(){var s=Math.floor((Date.now()-T0)/1000);$("t").textContent=fmt(s);if(s>=MAX)r.stop()},500)},
+function(e){$("b").disabled=false;st("No se pudo usar el micrófono ("+(e&&e.name||e)+"). Permite el acceso al micrófono y vuelve a pulsar.","ko")})};
+</script></body></html>
